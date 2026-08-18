@@ -1,5 +1,4 @@
 /**
-
 - 预算魔法账本・AI 中转代理服务（server/index.js）
 - 新增：登录注册、SQLite 云端账单、导出 CSV 接口
 */
@@ -20,33 +19,34 @@ const app = express ();
 
 /* ---------- 配置区（全部来自 .env） ---------- */
 const PORT = Number (process.env.PORT || 8787);
-const DEEPSEEK_BASE_URL = (process.env.DEEPSEEK_BASE_URL || '[https://api.deepseek.com/v1/chat/completions](https://link.wtturl.cn/?target=https%3A%2F%2Fapi.deepseek.com%2Fv1%2Fchat%2Fcompletions&scene=im&aid=582478&lang=zh)').trim();
+const DEEPSEEK_BASE_URL = (process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1/chat/completions').trim();
 const DEEPSEEK_API_KEY = (process.env.DEEPSEEK_API_KEY || '').trim();
 const MODEL_NAME = process.env.MODEL_NAME || 'deepseek-chat';
 const TIMEOUT_MS = Number(process.env.TIMEOUT_MS || 30000);
 
-/* ---------- 中间件 ---------- */
+/* ---------- 基础中间件 ---------- */
 app.use (cors ());
 app.use (express.json ({ limit: '1mb' }));
 
-// ===================== 【账号 & 云端账单接口】放这里 =====================
+
+// ===================== 【账号 & 云端账单接口】 =====================
 // 注册
 app.post ('/api/register', async (req, res) => {
 try {
 const { username, password } = req.body;
-if (!username || !password) return res.json ({ok:false,msg:' 账号密码不能为空 '});
+if (!username || !password) return res.json ({ok:false,msg:'账号密码不能为空'});
 
 db.get(`SELECT id FROM users WHERE username = ?`, [username], async (err, row) => {
-if (row) return res.json ({ok:false,msg:' 用户名已存在 '});
+if (row) return res.json ({ok:false,msg:'用户名已存在'});
 const hash = await bcrypt.hash (password, 10);
 db.run (`INSERT INTO users(username,password) VALUES(?,?)`,[username,hash], function (e){
-if (e) return res.json ({ok:false,msg:' 注册失败 '});
-res.json ({ok:true,msg:' 注册成功 '});
+if (e) return res.json ({ok:false,msg:'注册失败'});
+res.json ({ok:true,msg:'注册成功'});
 })
 })
 
 } catch (e) {
-res.json ({ok:false,msg:' 服务异常：'+e.message})
+res.json ({ok:false,msg:'服务异常：'+e.message})
 }
 })
 
@@ -55,14 +55,14 @@ app.post ('/api/login', async (req, res) => {
 try {
 const { username, password } = req.body;
 db.get (`SELECT * FROM users WHERE username=?`, [username], async (err, user)=>{
-if (!user) return res.json ({ok:false,msg:' 账号不存在 '});
+if (!user) return res.json ({ok:false,msg:'账号不存在'});
 const ok = await bcrypt.compare (password, user.password);
-if (!ok) return res.json ({ok:false,msg:' 密码错误 '});
+if (!ok) return res.json ({ok:false,msg:'密码错误'});
 const token = jwt.sign ({uid:user.id, username:user.username}, JWT_SECRET, {expiresIn:'30d'});
 res.json ({ok:true, token, username:user.username})
 })
 } catch (e) {
-res.json ({ok:false,msg:' 服务异常：'+e.message})
+res.json ({ok:false,msg:'服务异常：'+e.message})
 }
 })
 
@@ -112,27 +112,26 @@ const uid = req.user.uid;
 res.setHeader ('Content-Type','text/csv;charset=utf-8');
 res.setHeader ('Content-Disposition','attachment;filename=bills.csv');
 db.all (`SELECT date,type,amount,category,remark FROM bills WHERE user_id=? ORDER BY date`,[uid],(err,rows)=>{
-let csv = ' 日期，收支类型，金额，分类，备注 \n';
+let csv = '日期,收支类型,金额,分类,备注\n';
 rows.forEach (r=>{
 csv += `${r.date},${r.type},${r.amount},${r.category},"${r.remark||''}"\n`
 })
 res.end('\uFEFF'+csv);
 })
 })
-// =====================================================================
 
 /* ---------- AI 转发核心逻辑 ---------- */
 async function handleChat (req, res) {
 if (!DEEPSEEK_API_KEY) {
 return res.status (500).json ({
-error: { message: ' 服务端未配置 DEEPSEEK_API_KEY，请编辑 server/.env 后重启服务 ' },
+error: { message: '服务端未配置 DEEPSEEK_API_KEY，请编辑环境变量后重启服务' },
 });
 }
 
 const body = req.body || {};
 if (!Array.isArray (body.messages) || body.messages.length === 0) {
 return res.status (400).json ({
-error: { message: ' 请求体缺少有效的 messages 字段，需为 OpenAI Chat Completions 格式 ' },
+error: { message: '请求体缺少有效的 messages 字段，需为 OpenAI Chat Completions 格式' },
 });
 }
 
@@ -176,13 +175,7 @@ const text = await upstream.text();
 res.status(upstream.status).type('application/json').send(text);
 }
 
-/* ---------- 静态页面 ---------- */
-const CLIENT_DIR = path.join (__dirname,'client');
-if (fs.existsSync (CLIENT_DIR)) {
-app.use (express.static (CLIENT_DIR));
-}
-
-/* ---------- AI 相关路由 ---------- */
+// ========= AI路由 & 健康检查接口【全部API写完，再到静态资源】 =========
 app.post ('/api/ai/chat', handleChat);
 app.post ('/api/ai/chat/completions', handleChat);
 app.get ('/api/health', (req, res) => {
@@ -190,21 +183,25 @@ res.json ({ ok: true, service: 'budget-book-ai-proxy', keyConfigured: Boolean (D
 });
 
 
+// ========= 静态页面【所有API接口之后！！】 =========
+const CLIENT_DIR = path.join (__dirname,'client');
+if (fs.existsSync (CLIENT_DIR)) {
+app.use (express.static (CLIENT_DIR));
+}
 
-// SPA 单页应用回退路由，解决浏览器刷新 404
+// ========= SPA单页回退路由，放在文件路由最末尾 =========
 if (fs.existsSync (path.join (CLIENT_DIR,'index.html'))){
 app.get ('*', (req, res) => {
 res.sendFile (path.join (CLIENT_DIR, 'index.html'));
 });
 }
 
-/* ---------- 启动 ---------- */
+/* ---------- 启动服务 ---------- */
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ 服务实际监听端口: ${PORT}`);
     console.log(`[ai-proxy] 服务已启动，端口 ${PORT}`);
     console.log(`[ai-proxy] 上游端点: ${DEEPSEEK_BASE_URL}`);
     console.log(`[ai-proxy] 默认模型: ${MODEL_NAME}`);
     console.log(`[ai-proxy] 请求超时: ${TIMEOUT_MS}ms`);
-    console.log(`[ai-proxy] API 密钥: ${DEEPSEEK_API_KEY ? '已配置 ✓' : '未配置 ✗(请编辑 server/.env)'}`);
+    console.log(`[ai-proxy] API 密钥: ${DEEPSEEK_API_KEY ? '已配置 ✓' : '未配置 ✗(请配置环境变量)'}`);
   });
-  
