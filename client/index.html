@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>预算魔法账本</title>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <!-- 顶部月份栏 -->
+  <header class="top-bar">
+    <button type="button" class="month-nav" id="btnPrevMonth" aria-label="上个月">‹</button>
+    <h1 class="month-title" id="monthTitle">—</h1>
+    <button type="button" class="month-nav" id="btnNextMonth" aria-label="下个月">›</button>
+
+    <!-- 用户登录区域【新增】 -->
+    <div class="user-bar" style="margin-left:auto;margin-right:12px;display:flex;align-items:center;gap:8px;">
+      <span id="userArea"></span>
+      <button id="loginBtn">登录/注册</button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <!-- 首页：当月概览 -->
+    <section class="view view--active" data-view="home">
+      <div class="card overview-card">
+        <p class="overview-label">本月支出</p>
+        <p class="overview-amount" id="homeExpense">¥0.00</p>
+        <div class="overview-row">
+          <div class="overview-col">
+            <span class="overview-sub">收入</span>
+            <span class="overview-sub-amount" id="homeIncome">¥0.00</span>
+          </div>
+          <div class="overview-col">
+            <span class="overview-sub">结余</span>
+            <span class="overview-sub-amount" id="homeBalance">¥0.00</span>
+          </div>
+        </div>
+      </div>
+      <button type="button" class="btn-add" id="btnHomeAdd">＋ 记一笔</button>
+      <p class="home-tip">记录每一笔，把钱花明白</p>
+    </section>
+
+    <!-- 账目列表 -->
+    <section class="view" data-view="ledger">
+      <div class="card filter-card">
+        <div class="filter-card__head">
+          <span class="filter-card__title">时间筛选</span>
+          <span class="filter-card__badge" id="filterBadge" hidden>自定义</span>
+        </div>
+        <div class="filter-chips">
+          <button type="button" class="filter-chip filter-chip--active" data-range="month">本月</button>
+          <button type="button" class="filter-chip" data-range="7d">近7天</button>
+          <button type="button" class="filter-chip" data-range="30d">近30天</button>
+          <button type="button" class="filter-chip" data-range="all">全部</button>
+        </div>
+        <div class="filter-custom">
+          <span class="filter-custom__label">自定义</span>
+          <input class="filter-custom__input" id="filterStart" type="date" aria-label="开始日期">
+          <span class="filter-custom__sep">至</span>
+          <input class="filter-custom__input" id="filterEnd" type="date" aria-label="结束日期">
+          <button type="button" class="filter-custom__clear" id="filterClear" hidden>清除</button>
+        </div>
+        <p class="filter-summary" id="filterSummary" hidden></p>
+      </div>
+      <ul class="txn-list" id="txnList"></ul>
+      <div class="empty" id="ledgerEmpty" hidden>
+        <p class="empty-icon">📒</p>
+        <p class="empty-text" id="ledgerEmptyText">本月还没有账目</p>
+        <p class="empty-hint">点底部「记一笔」开始记账</p>
+      </div>
+    </section>
+
+    <!-- 统计 -->
+    <section class="view" data-view="stats">
+      <div class="card stats-summary">
+        <div class="stats-row">
+          <span>收入</span>
+          <span class="stats-income" id="statIncome">¥0.00</span>
+        </div>
+        <div class="stats-row">
+          <span>支出</span>
+          <span class="stats-expense" id="statExpense">¥0.00</span>
+        </div>
+        <div class="stats-row stats-row--strong">
+          <span>结余</span>
+          <span class="stats-balance" id="statBalance">¥0.00</span>
+        </div>
+      </div>
+      <div class="card ai-report-card">
+        <div class="ai-report-card__head">
+          <div class="ai-report-card__info">
+            <h2 class="card-title">AI 周期财务报告</h2>
+            <p class="ai-report-card__desc">基于当前筛选范围的账单，自动生成周期财务分析与建议</p>
+          </div>
+          <button type="button" class="btn-ai-report" id="btnAiReport">✨ 生成报告</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2 class="card-title">收支趋势</h2>
+        <div class="chart-box" id="trendChart"></div>
+      </div>
+      <div class="card">
+        <h2 class="card-title">支出分类占比</h2>
+        <div class="chart-box" id="donutChart"></div>
+      </div>
+      <div class="card">
+        <h2 class="card-title">收入分类占比</h2>
+        <div class="chart-box" id="donutChartIncome"></div>
+      </div>
+      <div class="card budget-card">
+        <div class="budget-card__head">
+          <h2 class="card-title">分类预算</h2>
+          <span class="budget-card__month" id="budgetMonth">—</span>
+        </div>
+        <p class="budget-card__tip">点击分类行设置月度预算，超支会提醒你</p>
+        <ul class="budget-list" id="budgetList"></ul>
+        <div class="empty" id="budgetEmpty" hidden>
+          <p class="empty-icon">🎯</p>
+          <p class="empty-text">暂无支出分类预算</p>
+        </div>
+      </div>
+      <div class="card">
+        <h2 class="card-title">收入分类排行</h2>
+        <ul class="rank-list" id="rankListIncome"></ul>
+        <div class="empty" id="rankEmptyIncome" hidden>
+          <p class="empty-icon">💰</p>
+          <p class="empty-text">暂无收入记录</p>
+        </div>
+      </div>
+      <div class="card">
+        <h2 class="card-title">支出分类排行</h2>
+        <ul class="rank-list" id="rankListExpense"></ul>
+        <div class="empty" id="rankEmptyExpense" hidden>
+          <p class="empty-icon">📊</p>
+          <p class="empty-text">暂无支出记录</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 底部导航 -->
+  <nav class="tab-bar">
+    <button type="button" class="tab-item tab-item--active" data-view="home">
+      <span class="tab-icon">🏠</span>
+      <span class="tab-label">首页</span>
+    </button>
+    <button type="button" class="tab-item" data-view="ledger">
+      <span class="tab-icon">📒</span>
+      <span class="tab-label">账本</span>
+    </button>
+    <button type="button" class="tab-item tab-item--add" id="btnTabAdd" aria-label="记一笔">
+      <span class="add-btn">＋</span>
+    </button>
+    <button type="button" class="tab-item" data-view="stats">
+      <span class="tab-icon">📊</span>
+      <span class="tab-label">统计</span>
+    </button>
+  </nav>
+
+  <!-- 记账面板（新增 / 编辑共用） -->
+  <div class="modal" id="modal" hidden>
+    <div class="modal__backdrop" data-close="modal"></div>
+    <div class="modal__sheet" role="dialog" aria-modal="true" aria-label="记账面板">
+      <div class="modal__handle"></div>
+      <div class="modal__header">
+        <h2 class="modal__title" id="modalTitle">记一笔</h2>
+        <button type="button" class="modal__close" data-close="modal" aria-label="关闭">✕</button>
+      </div>
+      <form class="txn-form" id="txnForm" novalidate>
+        <div class="type-switch" role="tablist" aria-label="类型">
+          <button type="button" class="type-btn type-btn--active" data-type="expense" role="tab" aria-selected="true">支出</button>
+          <button type="button" class="type-btn" data-type="income" role="tab" aria-selected="false">收入</button>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="inputAmount">金额</label>
+          <input class="field-input field-input--amount" id="inputAmount" type="text"
+                 inputmode="decimal" placeholder="0.00" autocomplete="off">
+          <p class="field-error" id="amountError" hidden>请输入正确的金额（大于 0，最多两位小数）</p>
+        </div>
+
+        <div class="field">
+          <span class="field-label">分类</span>
+          <div class="cat-grid" id="catGrid"></div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="inputDate">日期</label>
+          <input class="field-input" id="inputDate" type="date">
+          <p class="field-error" id="dateError" hidden>请选择日期</p>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="inputNote">备注</label>
+          <input class="field-input" id="inputNote" type="text" maxlength="50"
+                 placeholder="选填，最多 50 字" autocomplete="off">
+        </div>
+
+        <div class="modal__actions">
+          <button type="button" class="btn btn--danger-outline" id="btnDeleteTxn" hidden>删除</button>
+          <button type="submit" class="btn-submit" id="btnSubmit">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 删除二次确认 -->
+  <div class="confirm" id="confirm" hidden>
+    <div class="confirm__backdrop" data-close="confirm"></div>
+    <div class="confirm__box" role="alertdialog" aria-modal="true" aria-label="删除确认">
+      <p class="confirm__text" id="confirmText">确定删除这笔账吗？删除后不可恢复。</p>
+      <div class="confirm__actions">
+        <button type="button" class="btn btn--ghost" data-close="confirm">取消</button>
+        <button type="button" class="btn btn--danger" id="btnConfirmDelete" data-action="confirm-delete">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI 账单分析弹窗 -->
+  <div class="modal" id="aiModal" hidden>
+    <div class="modal__backdrop" data-close="aiModal"></div>
+    <div class="modal__sheet" role="dialog" aria-modal="true" aria-label="AI 账单分析">
+      <div class="modal__handle"></div>
+      <div class="modal__header">
+        <h2 class="modal__title" id="aiModalTitle">AI 账单分析</h2>
+        <button type="button" class="modal__close" data-close="aiModal" aria-label="关闭">✕</button>
+      </div>
+      <div class="ai-body">
+        <div class="ai-loading" id="aiLoading">
+          <span class="ai-loading__spinner" aria-hidden="true"></span>
+          <p class="ai-loading__text">AI 思考中…</p>
+        </div>
+        <div class="ai-error" id="aiError" hidden>
+          <p class="ai-error__icon">⚠️</p>
+          <p class="ai-error__text" id="aiErrorText">AI 分析失败，请稍后重试</p>
+          <button type="button" class="btn btn--ghost" id="btnAiRetry">重试</button>
+        </div>
+        <div class="ai-result" id="aiResult" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 预算设置弹窗 -->
+  <div class="modal" id="budgetModal" hidden>
+    <div class="modal__backdrop" data-close="budgetModal"></div>
+    <div class="modal__sheet" role="dialog" aria-modal="true" aria-label="设置分类预算">
+      <div class="modal__handle"></div>
+      <div class="modal__header">
+        <h2 class="modal__title" id="budgetModalTitle">设置分类预算</h2>
+        <button type="button" class="modal__close" data-close="budgetModal" aria-label="关闭">✕</button>
+      </div>
+      <form class="txn-form" id="budgetForm" novalidate>
+        <div class="field">
+          <span class="field-label">分类</span>
+          <div class="budget-cat" id="budgetCat">
+            <span class="budget-cat__icon" id="budgetCatIcon">🍜</span>
+            <span class="budget-cat__name" id="budgetCatName">餐饮</span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="inputBudgetAmount">月度预算（元）</label>
+          <input class="field-input field-input--amount" id="inputBudgetAmount" type="text"
+                 inputmode="decimal" placeholder="0.00" autocomplete="off">
+          <p class="field-error" id="budgetError" hidden>请输入正确的金额（大于 0，最多两位小数）</p>
+        </div>
+        <div class="modal__actions">
+          <button type="button" class="btn btn--danger-outline" id="btnClearBudget" hidden>清除预算</button>
+          <button type="submit" class="btn-submit" id="btnSaveBudget">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 登录弹窗【修正版】 -->
+  <div id="loginModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:#fff;padding:24px;border-radius:12px;width:320px;">
+      <h3>登录</h3>
+      <div style="margin:12px 0;">
+        <input id="inpUser" placeholder="用户名" style="width:100%;padding:8px;box-sizing:border-box;">
+      </div>
+      <div style="margin:12px 0;">
+        <input id="inpPwd" type="password" placeholder="密码" style="width:100%;padding:8px;box-sizing:border-box;">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px;">
+        <button id="btnLogin">登录</button>
+        <button id="btnRegister">注册</button>
+        <button id="closeModal">关闭</button>
+      </div>
+      <div style="margin-top:12px;">
+        <button id="migrateBtn">本地账单迁移到云端</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 轻提示 -->
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
