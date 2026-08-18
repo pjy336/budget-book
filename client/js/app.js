@@ -1237,3 +1237,16 @@ async function init() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+// --------修复AI弹窗关闭--------
+document.addEventListener('click', function (e) {
+  // 点击 ×关闭按钮
+  if (e.target.classList.contains('close-btn')) {
+    const modal = document.getElementById('aiModal');
+    if (modal) modal.style.display = 'none';
+  }
+  // 点击灰色背景关闭弹窗
+  if (e.target.id === 'aiModal') {
+    e.target.style.display = 'none';
+  }
+})
