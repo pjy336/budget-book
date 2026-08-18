@@ -259,8 +259,8 @@ function renderStats() {
   el.statExpense.textContent = fmtMoney(expense);
   el.statBalance.textContent = fmtMoney(income - expense);
 
-  renderRankList(el.rankListIncome, el.rankEmptyIncome, buildRankRows(txns, 'income'), income);
-  renderRankList(el.rankListExpense, el.rankEmptyExpense, buildRankRows(txns, 'expense'), expense);
+  renderRankList(el.rankListIncome, el.rankEmptyIncome, buildRankRows(txns, 'income'), income, 'income');
+  renderRankList(el.rankListExpense, el.rankEmptyExpense, buildRankRows(txns, 'expense'), expense, 'expense');
 
   renderTrendChart(el.trendChart, buildTrendSeries(txns));
   renderDonutChart(el.donutChart, buildDonutSegments(txns, 'expense'), '总支出', fmtMoney(expense));
@@ -280,14 +280,14 @@ function buildRankRows(txns, type) {
     .sort((a, b) => b.amount - a.amount);
 }
 
-function renderRankList(listEl, emptyEl, rows, total) {
+function renderRankList(listEl, emptyEl, rows, total, billType) {
   listEl.innerHTML = '';
   emptyEl.hidden = rows.length > 0;
   if (rows.length === 0) return;
 
   const frag = document.createDocumentFragment();
   rows.forEach(({ categoryId, amount }) => {
-    const cat = findCategory(categoryId, total > 0 ? (amount > 0 ? 'expense' : 'income') : 'expense');
+    const cat = findCategory(categoryId, billType);
     const pct = total > 0 ? Math.round((amount / total) * 100) : 0;
     const li = document.createElement('li');
     li.className = 'rank-item';
