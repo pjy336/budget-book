@@ -13,8 +13,8 @@ const bcrypt = require ('bcryptjs');
 const jwt = require ('jsonwebtoken');
 const { authMiddleware, JWT_SECRET } = require ('./middleware/auth');
 
-// 加载 .env 配置
-dotenv.config ();
+// 加载 .env 配置（优先系统环境变量，其次读取 server/.env 兜底）
+dotenv.config ({ path: path.join (__dirname, 'server', '.env') });
 const app = express ();
 
 /* ---------- 配置区（全部来自 .env） ---------- */
