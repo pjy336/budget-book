@@ -1248,15 +1248,4 @@ async function init() {
 
 document.addEventListener('DOMContentLoaded', init);
 
-//修复AI弹窗关闭
-document.addEventListener('click', function (e) {
-  //匹配带data-close属性的关闭按钮 ×
-  if(e.target.hasAttribute('data-close')){
-    const modalId = e.target.getAttribute('data-close');
-    const modal = document.getElementById(modalId);
-    if(modal){
-      modal.style.display = 'none';
-    }
-  }
-})
 

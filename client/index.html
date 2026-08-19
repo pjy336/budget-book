@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>预算魔法账本</title>
   <link rel="stylesheet" href="css/main.css">
+  <!-- 修复弹窗关闭后残留遮罩问题：确保hidden属性真正生效 -->
+  <style>
+    .modal[hidden],
+    .confirm[hidden] {
+      display: none !important;
+    }
+  </style>
 </head>
 <body>
   <!-- 顶部月份栏 -->
