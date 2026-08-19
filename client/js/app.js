@@ -813,11 +813,21 @@ function openAiDialog(bills, title) {
 }
 
 function closeAiModal() {
-  if (state.aiAbort) state.aiAbort.abort();
+  // 终止未完成的AI请求并清空状态
+  if (state.aiAbort) {
+    state.aiAbort.abort();
+    state.aiAbort = null;
+  }
   state.aiBills = null;
+
+  // 真正隐藏弹窗，彻底移除遮罩拦截
   el.aiModal.hidden = true;
+  // 恢复页面滚动
   document.body.classList.remove('modal-open');
+  // 重置AI请求锁，允许下次点击
+  aiRequestRunning = false;
 }
+
 
 async function runAiAnalysis() {
   if (state.aiAbort) state.aiAbort.abort();
