@@ -815,7 +815,7 @@ function openAiDialog(bills, title) {
 function closeAiModal() {
   if (state.aiAbort) state.aiAbort.abort();
   state.aiBills = null;
-  el.aiModal.hidden = false;
+  el.aiModal.hidden = true;
   document.body.classList.remove('modal-open');
 }
 
